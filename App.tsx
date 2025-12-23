@@ -163,7 +163,8 @@ const App: React.FC = () => {
     kitchen: Kitchen, 
     items: CartItem[], 
     method: PaymentMethod, 
-    recipient: { name: string, phone: string, address: string }
+    recipient: { name: string, phone: string, address: string },
+    notes: string
   ) => {
     const total = items.reduce((acc, curr) => acc + (curr.price * curr.quantity), 0);
     const deliveryFee = deliveryType === 'EXPRESS' ? 10000 : 5000;
@@ -191,7 +192,7 @@ const App: React.FC = () => {
       recipientName: recipient.name,
       recipientPhone: recipient.phone,
       recipientAddress: recipient.address,
-      notes: orderNotes,
+      notes: notes,
       isPaid: method !== PaymentMethod.CASH,
       createdAt: new Date().toISOString(),
       pickupTime: scheduledTime
@@ -295,6 +296,7 @@ const App: React.FC = () => {
               mealCredits={mealCredits}
               deliveryType={deliveryType}
               userProfile={userProfile}
+              initialNotes={orderNotes}
               onClose={() => setIsCheckoutOpen(false)}
               onConfirm={handleConfirmOrder}
             />

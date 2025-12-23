@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { Kitchen, Order, OrderStatus, UserProfile, Meal } from '../types';
-import { generateMealDescription } from '../services/geminiService';
 
 interface MerchantDashboardProps {
   kitchen: Kitchen;
@@ -31,8 +30,6 @@ const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ kitchen, orders, 
     maxQuantity: 20
   });
 
-  const [isGenerating, setIsGenerating] = useState(false);
-
   const pendingCount = orders.filter(o => o.status === OrderStatus.PENDING).length;
 
   const handleUpdateKitchenInfo = (e: React.FormEvent) => {
@@ -42,14 +39,6 @@ const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ kitchen, orders, 
       avatar: editKitchenData.avatar
     });
     setIsEditingKitchen(false);
-  };
-
-  const handleAISuggestDescription = async () => {
-    if (!newMeal.name) return;
-    setIsGenerating(true);
-    const desc = await generateMealDescription(newMeal.name, ['Nguyên liệu tươi sạch', 'Gia vị vừa ăn']);
-    setNewMeal(prev => ({ ...prev, description: desc }));
-    setIsGenerating(false);
   };
 
   const handleAddNewMeal = (e: React.FormEvent) => {
@@ -347,14 +336,6 @@ const MerchantDashboard: React.FC<MerchantDashboardProps> = ({ kitchen, orders, 
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <label className="block text-[10px] font-black text-brand-brown-400 uppercase tracking-widest ml-1">Mô tả món ăn</label>
-                  <button 
-                    type="button" 
-                    onClick={handleAISuggestDescription}
-                    disabled={isGenerating || !newMeal.name}
-                    className="text-[10px] font-black text-brand-orange-600 uppercase flex items-center gap-1 hover:underline disabled:opacity-40"
-                  >
-                    {isGenerating ? 'AI đang viết...' : '✨ Gemini gợi ý mô tả'}
-                  </button>
                 </div>
                 <textarea 
                   value={newMeal.description}

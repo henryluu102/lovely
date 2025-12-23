@@ -1,10 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Kitchen, Coordinates, Order, WalletTransaction, MealPackage, MealCreditTransaction, UserProfile, CartItem } from '../types';
 import KitchenCard from './KitchenCard';
 import OrderTracking from './OrderTracking';
 import WalletCard from './WalletCard';
-import { suggestMealBasedOnMood } from '../services/geminiService';
 
 const MEAL_PACKS: MealPackage[] = [
   { id: 'p1', name: 'Gói Sinh Viên', mealCount: 5, price: 185000, description: 'Lựa chọn tiết kiệm cho 1 tuần bận rộn', savingPercent: 15 },
@@ -44,9 +43,7 @@ const BuyerDashboard: React.FC<BuyerDashboardProps> = ({
   onOpenCart, onRadiusChange, onAddToCart, onTopUp, onBuyPackage 
 }) => {
   const [activeTab, setActiveTab] = useState<'EXPLORE' | 'ORDERS' | 'WALLET'>('EXPLORE');
-  const [aiMood, setAiMood] = useState('');
-  const [aiResponse, setAiResponse] = useState('');
-  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -55,18 +52,16 @@ const BuyerDashboard: React.FC<BuyerDashboardProps> = ({
     return "Chào buổi tối";
   };
 
-  const handleAiAsk = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!aiMood.trim()) return;
-
-    setIsAiLoading(true);
-    const availableData = kitchens.map(k => `${k.kitchenName} có ${k.meals.map(m => m.name).join(', ')}`).join('; ');
-    const suggestion = await suggestMealBasedOnMood(aiMood, availableData);
-    setAiResponse(suggestion || '');
-    setIsAiLoading(false);
-  };
-
-  const quickMoods = ["Thanh đạm", "Đậm đà", "Món nước", "Món miền Tây", "Ăn kiêng"];
+  const filteredKitchens = useMemo(() => {
+    if (!searchQuery.trim()) return kitchens;
+    
+    const query = searchQuery.toLowerCase().trim();
+    return kitchens.filter(kitchen => {
+      const kitchenMatch = kitchen.kitchenName.toLowerCase().includes(query);
+      const dishMatch = kitchen.meals.some(meal => meal.name.toLowerCase().includes(query));
+      return kitchenMatch || dishMatch;
+    });
+  }, [kitchens, searchQuery]);
 
   return (
     <div className="space-y-8 animate-fadeIn relative">
@@ -135,68 +130,44 @@ const BuyerDashboard: React.FC<BuyerDashboardProps> = ({
 
       {activeTab === 'EXPLORE' && (
         <div className="space-y-8">
-          {/* AI Suggestion Section */}
-          <section className="bg-brand-brown-900 rounded-[3rem] p-8 text-white relative overflow-hidden shadow-2xl">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-brand-orange-500/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
-            <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-brand-orange-500 rounded-2xl flex items-center justify-center text-2xl shadow-lg shadow-brand-orange-500/20">✨</div>
-                <div>
-                  <h3 className="text-xl font-black">Hôm nay ăn gì Neighbor?</h3>
-                  <p className="text-brand-orange-200 text-xs font-bold uppercase tracking-widest">AI Kitchen Assistant</p>
-                </div>
-              </div>
-              
-              <form onSubmit={handleAiAsk} className="relative mb-6">
-                <input 
-                  type="text" 
-                  value={aiMood}
-                  onChange={(e) => setAiMood(e.target.value)}
-                  placeholder="Hôm nay tâm trạng bạn thế nào? (Vd: Muốn ăn gì đó thanh đạm...)"
-                  className="w-full bg-white/10 border-2 border-white/10 rounded-2xl py-5 px-6 outline-none focus:border-brand-orange-500 focus:bg-white/20 transition-all font-medium pr-16"
-                />
-                <button 
-                  disabled={isAiLoading}
-                  className="absolute right-3 top-3 bottom-3 bg-brand-orange-500 hover:bg-brand-orange-600 px-6 rounded-xl transition-all flex items-center justify-center disabled:opacity-50"
-                >
-                  {isAiLoading ? (
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  ) : (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-                  )}
-                </button>
-              </form>
-
-              <div className="flex flex-wrap gap-2">
-                {quickMoods.map(mood => (
-                  <button 
-                    key={mood}
-                    onClick={() => { setAiMood(mood); setTimeout(handleAiAsk, 0); }}
-                    className="bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all"
-                  >
-                    {mood}
-                  </button>
-                ))}
-              </div>
-
-              {aiResponse && (
-                <div className="mt-8 p-6 bg-white/10 backdrop-blur-md rounded-[2rem] border border-white/10 animate-slideUp">
-                  <p className="text-sm italic leading-relaxed text-brand-orange-50">"{aiResponse}"</p>
-                </div>
-              )}
+          {/* Search Bar Section */}
+          <section className="relative group">
+            <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
+              <svg className="w-5 h-5 text-brand-brown-300 group-focus-within:text-brand-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
             </div>
+            <input 
+              type="text" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Tìm tên món ăn hoặc tên bếp hàng xóm..."
+              className="w-full bg-brand-brown-50 border-2 border-transparent focus:border-brand-orange-500 focus:bg-white rounded-3xl py-5 pl-14 pr-6 outline-none transition-all font-bold text-brand-brown-900 shadow-sm placeholder:text-brand-brown-300 placeholder:font-medium"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-6 flex items-center text-brand-brown-200 hover:text-brand-brown-400"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
           </section>
 
           {/* Kitchen List */}
           <section className="space-y-6">
              <div className="flex items-center justify-between px-2">
-               <h3 className="font-black text-xl text-brand-brown-900">Bếp quanh bạn ({activeRadius}km)</h3>
+               <h3 className="font-black text-xl text-brand-brown-900">
+                {searchQuery ? `Kết quả tìm kiếm (${filteredKitchens.length})` : `Bếp quanh bạn (${activeRadius}km)`}
+               </h3>
                {isSearching && <span className="text-[10px] font-black text-brand-orange-500 uppercase animate-pulse">Đang tìm bếp mới...</span>}
              </div>
              
-             {kitchens.length > 0 ? (
+             {filteredKitchens.length > 0 ? (
                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                 {kitchens.map(kitchen => (
+                 {filteredKitchens.map(kitchen => (
                    <KitchenCard 
                      key={kitchen.id} 
                      kitchen={kitchen} 
@@ -210,19 +181,35 @@ const BuyerDashboard: React.FC<BuyerDashboardProps> = ({
                  <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
                     <svg className="w-10 h-10 text-brand-brown-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                  </div>
-                 <h4 className="font-black text-brand-brown-900 text-lg mb-2">Chưa tìm thấy bếp nào</h4>
-                 <p className="text-brand-brown-400 text-sm max-w-[280px] mx-auto mb-8 font-medium">Bạn có thể thử mở rộng bán kính tìm kiếm để khám phá thêm các bếp nhà hàng xóm khác!</p>
-                 <div className="flex justify-center gap-3">
-                    {RADIUS_OPTIONS.map(opt => (
-                      <button 
-                        key={opt.value}
-                        onClick={() => onRadiusChange(opt.value)}
-                        className={`px-6 py-2.5 rounded-xl font-black text-xs transition-all ${activeRadius === opt.value ? 'bg-brand-orange-500 text-white shadow-lg' : 'bg-white text-brand-brown-500 border border-brand-brown-100'}`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                 </div>
+                 <h4 className="font-black text-brand-brown-900 text-lg mb-2">
+                  {searchQuery ? 'Không tìm thấy kết quả phù hợp' : 'Chưa tìm thấy bếp nào'}
+                 </h4>
+                 <p className="text-brand-brown-400 text-sm max-w-[280px] mx-auto mb-8 font-medium">
+                  {searchQuery 
+                    ? 'Thử tìm với từ khóa khác hoặc xóa bộ lọc tìm kiếm nhé!' 
+                    : 'Bạn có thể thử mở rộng bán kính tìm kiếm để khám phá thêm các bếp nhà hàng xóm khác!'}
+                 </p>
+                 {!searchQuery && (
+                   <div className="flex justify-center gap-3">
+                      {RADIUS_OPTIONS.map(opt => (
+                        <button 
+                          key={opt.value}
+                          onClick={() => onRadiusChange(opt.value)}
+                          className={`px-6 py-2.5 rounded-xl font-black text-xs transition-all ${activeRadius === opt.value ? 'bg-brand-orange-500 text-white shadow-lg' : 'bg-white text-brand-brown-500 border border-brand-brown-100'}`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                   </div>
+                 )}
+                 {searchQuery && (
+                   <button 
+                    onClick={() => setSearchQuery('')}
+                    className="px-8 py-3 bg-brand-orange-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-brand-orange-600 transition-all shadow-lg shadow-brand-orange-100"
+                   >
+                     Xóa tìm kiếm
+                   </button>
+                 )}
                </div>
              )}
           </section>
