@@ -94,4 +94,225 @@ const BuyerDashboard: React.FC<BuyerDashboardProps> = ({
           </h2>
           <div className="flex items-center gap-4 mt-2">
             <p className="text-brand-brown-500 font-medium flex items-center gap-1.5">
-              <svg className="w-4 h-4 text-brand-orange-500" fill="currentColor" viewBox="0 0 20 20"><path d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 
+              <svg className="w-4 h-4 text-brand-orange-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" /></svg>
+              {userProfile.address}
+            </p>
+            <div className="flex bg-brand-brown-50 p-1 rounded-xl">
+              {RADIUS_OPTIONS.map(opt => (
+                <button 
+                  key={opt.value}
+                  onClick={() => onRadiusChange(opt.value)}
+                  className={`px-3 py-1 text-[10px] font-black rounded-lg transition-all ${activeRadius === opt.value ? 'bg-white text-brand-orange-500 shadow-sm' : 'text-brand-brown-300'}`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex bg-brand-brown-50 p-1.5 rounded-2xl w-fit">
+          <button 
+            onClick={() => setActiveTab('EXPLORE')}
+            className={`px-6 py-2.5 text-xs font-black rounded-xl transition-all ${activeTab === 'EXPLORE' ? 'bg-white text-brand-orange-600 shadow-sm' : 'text-brand-brown-500'}`}
+          >
+            KHÁM PHÁ
+          </button>
+          <button 
+            onClick={() => setActiveTab('ORDERS')}
+            className={`px-6 py-2.5 text-xs font-black rounded-xl transition-all ${activeTab === 'ORDERS' ? 'bg-white text-brand-orange-600 shadow-sm' : 'text-brand-brown-500'}`}
+          >
+            ĐƠN CỦA TÔI
+          </button>
+          <button 
+            onClick={() => setActiveTab('WALLET')}
+            className={`px-6 py-2.5 text-xs font-black rounded-xl transition-all ${activeTab === 'WALLET' ? 'bg-white text-brand-orange-600 shadow-sm' : 'text-brand-brown-500'}`}
+          >
+            VÍ & ƯU ĐÃI
+          </button>
+        </div>
+      </div>
+
+      {activeTab === 'EXPLORE' && (
+        <div className="space-y-8">
+          {/* AI Suggestion Section */}
+          <section className="bg-brand-brown-900 rounded-[3rem] p-8 text-white relative overflow-hidden shadow-2xl">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-brand-orange-500/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 bg-brand-orange-500 rounded-2xl flex items-center justify-center text-2xl shadow-lg shadow-brand-orange-500/20">✨</div>
+                <div>
+                  <h3 className="text-xl font-black">Hôm nay ăn gì Neighbor?</h3>
+                  <p className="text-brand-orange-200 text-xs font-bold uppercase tracking-widest">AI Kitchen Assistant</p>
+                </div>
+              </div>
+              
+              <form onSubmit={handleAiAsk} className="relative mb-6">
+                <input 
+                  type="text" 
+                  value={aiMood}
+                  onChange={(e) => setAiMood(e.target.value)}
+                  placeholder="Hôm nay tâm trạng bạn thế nào? (Vd: Muốn ăn gì đó thanh đạm...)"
+                  className="w-full bg-white/10 border-2 border-white/10 rounded-2xl py-5 px-6 outline-none focus:border-brand-orange-500 focus:bg-white/20 transition-all font-medium pr-16"
+                />
+                <button 
+                  disabled={isAiLoading}
+                  className="absolute right-3 top-3 bottom-3 bg-brand-orange-500 hover:bg-brand-orange-600 px-6 rounded-xl transition-all flex items-center justify-center disabled:opacity-50"
+                >
+                  {isAiLoading ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                  )}
+                </button>
+              </form>
+
+              <div className="flex flex-wrap gap-2">
+                {quickMoods.map(mood => (
+                  <button 
+                    key={mood}
+                    onClick={() => { setAiMood(mood); setTimeout(handleAiAsk, 0); }}
+                    className="bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all"
+                  >
+                    {mood}
+                  </button>
+                ))}
+              </div>
+
+              {aiResponse && (
+                <div className="mt-8 p-6 bg-white/10 backdrop-blur-md rounded-[2rem] border border-white/10 animate-slideUp">
+                  <p className="text-sm italic leading-relaxed text-brand-orange-50">"{aiResponse}"</p>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Kitchen List */}
+          <section className="space-y-6">
+             <div className="flex items-center justify-between px-2">
+               <h3 className="font-black text-xl text-brand-brown-900">Bếp quanh bạn ({activeRadius}km)</h3>
+               {isSearching && <span className="text-[10px] font-black text-brand-orange-500 uppercase animate-pulse">Đang tìm bếp mới...</span>}
+             </div>
+             
+             {kitchens.length > 0 ? (
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                 {kitchens.map(kitchen => (
+                   <KitchenCard 
+                     key={kitchen.id} 
+                     kitchen={kitchen} 
+                     userLocation={userLocation} 
+                     onAddToCart={(item) => onAddToCart(kitchen, item)}
+                   />
+                 ))}
+               </div>
+             ) : (
+               <div className="bg-brand-brown-50 rounded-[3rem] py-20 px-8 text-center">
+                 <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                    <svg className="w-10 h-10 text-brand-brown-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                 </div>
+                 <h4 className="font-black text-brand-brown-900 text-lg mb-2">Chưa tìm thấy bếp nào</h4>
+                 <p className="text-brand-brown-400 text-sm max-w-[280px] mx-auto mb-8 font-medium">Bạn có thể thử mở rộng bán kính tìm kiếm để khám phá thêm các bếp nhà hàng xóm khác!</p>
+                 <div className="flex justify-center gap-3">
+                    {RADIUS_OPTIONS.map(opt => (
+                      <button 
+                        key={opt.value}
+                        onClick={() => onRadiusChange(opt.value)}
+                        className={`px-6 py-2.5 rounded-xl font-black text-xs transition-all ${activeRadius === opt.value ? 'bg-brand-orange-500 text-white shadow-lg' : 'bg-white text-brand-brown-500 border border-brand-brown-100'}`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                 </div>
+               </div>
+             )}
+          </section>
+        </div>
+      )}
+
+      {activeTab === 'ORDERS' && (
+        <div className="space-y-8">
+          <h3 className="font-black text-2xl text-brand-brown-900 px-2">Theo dõi đơn hàng</h3>
+          {orders.length > 0 ? (
+            <div className="space-y-6">
+              {orders.map(order => (
+                <OrderTracking key={order.id} order={order} />
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-[3rem] py-24 text-center border-2 border-dashed border-brand-brown-50">
+               <p className="text-brand-brown-300 font-bold italic">Chưa có đơn hàng nào. Hãy khám phá món ngon ngay!</p>
+               <button onClick={() => setActiveTab('EXPLORE')} className="mt-6 bg-brand-orange-50 text-brand-orange-600 px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-brand-orange-100 transition-all">Khám phá ngay</button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'WALLET' && (
+        <div className="space-y-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+             <WalletCard balance={walletBalance} transactions={walletTransactions} onTopUp={onTopUp} />
+             
+             <div className="bg-white rounded-[2.5rem] p-8 border border-brand-brown-100 shadow-xl shadow-brand-brown-50/30">
+                <div className="flex justify-between items-center mb-8">
+                  <p className="text-[10px] font-title font-black text-brand-brown-300 uppercase tracking-widest">Thẻ lượt ăn (Meal Credits)</p>
+                  <div className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg text-[10px] font-black">ACTIVE</div>
+                </div>
+                <div className="flex items-end gap-3 mb-8">
+                  <h4 className="text-6xl font-black text-brand-brown-900 tracking-tighter">{mealCredits}</h4>
+                  <p className="text-brand-brown-400 font-bold mb-2 uppercase text-[10px] tracking-widest">Suất cơm còn lại</p>
+                </div>
+                <div className="space-y-4">
+                  <p className="text-[10px] font-black text-brand-brown-300 uppercase tracking-widest border-b border-brand-brown-50 pb-2">Lịch sử dùng thẻ</p>
+                  {creditTransactions.length > 0 ? (
+                    creditTransactions.map(tx => (
+                      <div key={tx.id} className="flex justify-between items-center text-xs">
+                         <span className="text-brand-brown-600 font-bold">{tx.description}</span>
+                         <span className={tx.change > 0 ? 'text-emerald-500 font-black' : 'text-brand-orange-500 font-black'}>
+                           {tx.change > 0 ? '+' : ''}{tx.change}
+                         </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-[10px] text-brand-brown-300 italic">Chưa có giao dịch thẻ lượt ăn.</p>
+                  )}
+                </div>
+             </div>
+          </div>
+
+          <section className="space-y-6">
+            <h3 className="font-black text-2xl text-brand-brown-900 px-2">Đăng ký gói cơm tháng (Tiết kiệm tới 20%)</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {MEAL_PACKS.map(pack => (
+                <div key={pack.id} className="bg-white p-8 rounded-[2.5rem] border border-brand-brown-50 shadow-sm hover:shadow-2xl hover:border-brand-orange-100 transition-all flex flex-col group">
+                   <div className="flex justify-between items-start mb-6">
+                      <div className="w-14 h-14 bg-brand-orange-50 text-brand-orange-500 rounded-2xl flex items-center justify-center text-2xl group-hover:bg-brand-orange-500 group-hover:text-white transition-all">🍱</div>
+                      <div className="bg-brand-honey-500 text-brand-brown-900 px-3 py-1 rounded-full text-[10px] font-black">-{pack.savingPercent}%</div>
+                   </div>
+                   <h4 className="text-xl font-black text-brand-brown-900 mb-2">{pack.name}</h4>
+                   <p className="text-xs text-brand-brown-400 font-medium leading-relaxed mb-6 flex-grow">{pack.description}</p>
+                   <div className="pt-6 border-t border-brand-brown-50">
+                      <div className="flex items-end justify-between mb-6">
+                         <div>
+                            <p className="text-[10px] font-black text-brand-orange-500 uppercase tracking-widest">{pack.mealCount} suất cơm</p>
+                            <p className="text-xl font-black text-brand-brown-900">{pack.price.toLocaleString()}đ</p>
+                         </div>
+                         <p className="text-[10px] text-brand-brown-300 line-through">{(pack.price / (1 - pack.savingPercent/100)).toLocaleString()}đ</p>
+                      </div>
+                      <button 
+                        onClick={() => onBuyPackage(pack)}
+                        className="w-full py-4 bg-brand-brown-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-brand-orange-500 transition-all shadow-xl shadow-brand-brown-100 group-hover:shadow-brand-orange-100"
+                      >
+                        Đăng ký ngay
+                      </button>
+                   </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default BuyerDashboard;
