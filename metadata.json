@@ -1,0 +1,7 @@
+{
+  "name": "Copy of Vibe of Cơm Nhà ",
+  "description": "A hyper-local home-cooked food platform connecting neighborhood home chefs with nearby hungry residents within a 2km radius.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
